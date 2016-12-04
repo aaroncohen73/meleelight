@@ -28,7 +28,7 @@ import {stages} from "stages/stages";
 import {runAI} from "main/ai";
 import {physics} from "physics/physics";
 import $ from 'jquery';
-import {controllerIDNumberFromGamepadID, controllerNameFromIDnumber, axis, button, controllerMaps, pollInputs, showButton, nullInputs, scaleToUnitAxes, custcent} from "main/input";
+import {Input} from "./input";
 /*globals performance*/
 
 export const player = [0,0,0,0];
@@ -44,9 +44,7 @@ export let endTargetGame = false;
 export let creditsPlayer = 0;
 
 let gameEnd = false;
-const attemptingControllerReset = [false,false,false,false];
 let keyboardOccupied = false;
-
 
 
 window.mType = [0, 0, 0, 0];
@@ -362,17 +360,17 @@ export function findPlayers (){
     if (typeof gamepad != "undefined" && gamepad != null) {
       var detected = false;
       var gType = 0;
-      let gamepadIDnumber = controllerIDNumberFromGamepadID(gamepad.id);
+      let gamepadIDnumber = Input.controllerIDNumberFromGamepadID(gamepad.id);
       if (gamepadIDnumber == -1) {
         console.log("error: controller detected but not supported");
       } else {
         detected ^= true;
         gType = gamepadIDnumber;
-        console.log("You are using ".concat(controllerNameFromIDnumber(gamepadIDnumber)));
+        console.log("You are using ".concat((Input.controllerNameFromIDnumber[gamepadIDnumber])?Input.controllerNameFromIDnumber[gamepadIDnumber]:"error: controller detected but not supported"));
       }
       if (detected) {
         if (gameMode < 2 || gameMode == 20) {
-          if (gamepad.buttons[controllerMaps[gType][button.s]].pressed) {
+          if (gamepad.buttons[Input.controllerMaps[gType][Input.button.s]].pressed) {
             var alreadyIn = false;
             for (var k = 0; k < ports; k++) {
               if (currentPlayers[k] == i) {
@@ -391,7 +389,7 @@ export function findPlayers (){
             }
           }
         } else {
-          if (gamepad.buttons[controllerMaps[gType][button.a]].pressed) {
+          if (gamepad.buttons[Input.controllerMaps[gType][Input.button.a]].pressed) {
             var alreadyIn = false;
             for (var k = 0; k < ports; k++) {
               if (currentPlayers[k] == i) {
@@ -557,192 +555,7 @@ export const removePlayer (i){
 }*/
 
 
-window.interpretInputs = function(i, active) {
-  let input = nullInputs;
-  
-  // the following block should be removed once the old input data is properly threaded through
-  for (var k = 1; k < 8; k++) {
-    input[k].lsX = player[i].inputs.lStickAxis[k-1].x;
-    input[k].lsY = player[i].inputs.lStickAxis[k-1].y;
-    input[k].rawX = player[i].inputs.rawlStickAxis[k-1].x;
-    input[k].rawY = player[i].inputs.rawlStickAxis[k-1].y;
-    input[k].csX = player[i].inputs.cStickAxis[k-1].x;
-    input[k].csY = player[i].inputs.cStickAxis[k-1].y;
-    input[k].lA = player[i].inputs.lAnalog[k-1];
-    input[k].rA = player[i].inputs.rAnalog[k-1];
-    input[k].s = player[i].inputs.s[k-1];
-    input[k].z = player[i].inputs.z[k-1];
-    input[k].a = player[i].inputs.a[k-1];
-    input[k].b = player[i].inputs.b[k-1];
-    input[k].x = player[i].inputs.x[k-1];
-    input[k].y = player[i].inputs.y[k-1];
-    input[k].r = player[i].inputs.r[k-1];
-    input[k].l = player[i].inputs.l[k-1];
-    input[k].dl = player[i].inputs.dpadleft[k-1];
-    input[k].dd = player[i].inputs.dpaddown[k-1];
-    input[k].dr = player[i].inputs.dpadright[k-1];
-    input[k].du = player[i].inputs.dpadup[k-1];
-  }
-  
-  input[0] = pollInputs(gameMode, frameByFrame, mType[i], i, currentPlayers[i], keys);
-
-  pause[i][1] = pause[i][0];
-  frameAdvance[i][1] = frameAdvance[i][0];
-
-  if (mType[i] == 10) { // keyboard controls
-    if (input[0].s || input[1].s ) {
-      pause[i][0] = true;
-    } else {
-      pause[i][0] = false
-    }
-    if (input[0].z  || input[1].z ) {
-      frameAdvance[i][0] = true;
-    } else {
-      frameAdvance[i][0] = false
-    }
-    if (frameAdvance[i][0] && !frameAdvance[i][1] && !playing && gameMode != 4) {
-    frameByFrame = true;
-    }
-    if (active) {
-      if (input[0].dl && !input[1].dl ) {
-       player[i].showLedgeGrabBox ^= true;
-      }
-      if (input[0].dd && !input[1].dd) {
-        player[i].showECB ^= true;
-      }
-      if (input[0].dr && !input[1].dr) {
-        player[i].showHitbox ^= true;
-      }
-    }
-    if ((input[0].a || input[1].a) && (input[0].l || input[1].l) && (input[0].r ||
-         input[1].r) && (input[0].s || input[1].s)) {
-      if (input[0].b || input[1].b) {
-        startGame();
-      } 
-      else {
-        endGame();
-      }
-    }
-    
-    interpretPause(i);
-    
-    if (showDebug) {
-    $("#lsAxisX" + i).empty().append(input[0].lsX.toFixed(4));
-    $("#lsAxisY" + i).empty().append(input[0].lsY.toFixed(4));
-    $("#csAxisX" + i).empty().append(input[0].csX.toFixed(4));
-    $("#csAxisY" + i).empty().append(input[0].csY.toFixed(4));
-    $("#lAnalog" + i).empty().append(input[0].lA.toFixed(4));
-    $("#rAnalog" + i).empty().append(input[0].rA.toFixed(4));
-    }
-  } 
-  else { // gamepad controls
-    
-    if (input[0].a && input[0].l && input[0].r && input[0].s) {
-      if (input[0].b) {
-        startGame();
-      } 
-      else {
-        endGame();
-      }
-    }
-    
-    if (( input[0].s && ! input[1].s) || input[0].du.pressed && gameMode == 5) {
-      pause[i][0] = true;
-    } else {
-      pause[i][0] = false
-    }
-    if (input[0].z && ! input[1].z ) {
-      frameAdvance[i][0] = true;
-    } else {
-      frameAdvance[i][0] = false
-    }
-    
-    if (frameAdvance[i][0] && !frameAdvance[i][1] && !playing && gameMode != 4) {
-    frameByFrame = true;
-    }
-    
-    if (input[0].dl && !input[1].dl) {
-      player[i].showLedgeGrabBox ^= true;
-    }
-    if (input[0].dd && !input[1].dd) {
-      player[i].showECB ^= true;
-    }
-    if (input[0].dr && !input[1].dr) {
-      player[i].showHitbox ^= true;
-    }
-    
-    // Controller reset functionality
-    if ((input[0].z || input[0].du) && input[0].x && input[0].y && !attemptingControllerReset[i]) {
-      attemptingControllerReset[i] = true;
-      setTimeout(function() {
-        if (input[0].du && input[0].x && input[0].y) {
-          custcent[i].ls = new Vec2D(input[0].lsX, input[0].lsY);
-          custcent[i].cs = new Vec2D(input[0].lsX, input[0].lsY);
-          custcent[i].l = input[0].lA;
-          custcent[i].r = input[0].rA;
-          console.log("Controller Reset!");
-          $("#resetIndicator" + i).fadeIn(100);
-          $("#resetIndicator" + i).fadeOut(500);
-        }
-        attemptingControllerReset[i] = false;
-      }, 2000);
-    }
-    
-    interpretPause(i);
-
-    showButton(i, 0,input[0].a);
-    showButton(i, 1,input[0].b);
-    showButton(i, 2,input[0].x);
-    showButton(i, 3,input[0].y);
-    showButton(i, 4,input[0].z);
-    showButton(i, 5,input[0].r);
-    showButton(i, 6,input[0].l);
-    showButton(i, 7,input[0].s);
-    showButton(i, 8,input[0].du);
-    showButton(i, 9,input[0].dr);
-    showButton(i,10,input[0].dd);
-    showButton(i,11,input[0].dl);
-        
-    if (showDebug) {
-    $("#lsAxisX" + i).empty().append(input[0].lsX.toFixed(4));
-    $("#lsAxisY" + i).empty().append(input[0].lsY.toFixed(4));
-    $("#csAxisX" + i).empty().append(input[0].csX.toFixed(4));
-    $("#csAxisY" + i).empty().append(input[0].csY.toFixed(4));
-    $("#lAnalog" + i).empty().append(input[0].lA.toFixed(4));
-    $("#rAnalog" + i).empty().append(input[0].rA.toFixed(4));
-    }
-    
-  }
-  
-  // the following block should be removed once the input data is properly threaded through and can be passed on
-  for (var k = 0; k < 8; k++) {
-    player[i].inputs.lStickAxis[k].x = input[k].lsX;
-    player[i].inputs.lStickAxis[k].y = input[k].lsY;
-    player[i].inputs.rawlStickAxis[k].x = input[k].rawX;
-    player[i].inputs.rawlStickAxis[k].y = input[k].rawY;
-    player[i].inputs.cStickAxis[k].x = input[k].csX;
-    player[i].inputs.cStickAxis[k].y = input[k].csY;
-    player[i].inputs.lAnalog[k] = input[k].lA;
-    player[i].inputs.rAnalog[k] = input[k].rA;
-    player[i].inputs.s[k] = input[k].s;
-    player[i].inputs.z[k] = input[k].z;
-    player[i].inputs.a[k] = input[k].a;
-    player[i].inputs.b[k] = input[k].b;
-    player[i].inputs.x[k] = input[k].x;
-    player[i].inputs.y[k] = input[k].y;
-    player[i].inputs.r[k] = input[k].r;
-    player[i].inputs.l[k] = input[k].l;
-    player[i].inputs.dpadleft[k] = input[k].dl;
-    player[i].inputs.dpaddown[k] = input[k].dd;
-    player[i].inputs.dpadright[k] = input[k].dr;
-    player[i].inputs.dpadup[k] = input[k].du;
-  }
-  
-  return input;
-
-};
-  
-function interpretPause(i) {  
+export function interpretPause(i) {
   if (pause[i][0] && !pause[i][1]) {
     if (gameMode == 3 || gameMode == 5) {
       playing ^= true;
@@ -831,7 +644,7 @@ export function update (i){
   if (!starting){
     if (currentPlayers[i] != -1){
       if (playerType[i] == 0){
-        interpretInputs(i,true);
+       Input.setPlayerInputs(i,Input.interpretInputs(i,true));
       }
       else {
         if (player[i].actionState != "SLEEP"){
@@ -851,38 +664,38 @@ export function gameTick (){
   var start = performance.now();
   var diff = 0;
 
-  let input = [nullInputs, nullInputs, nullInputs, nullInputs]; // need to change this
+  let input = new Input.makeNullInputs(); // need to change this
   
   if (gameMode == 0 || gameMode == 20) {
     findPlayers();
   } else if (gameMode == 1) {
     //console.log(playerType);
     for (var i = 0; i < ports; i++) {
-      input[i] = interpretInputs(i, true);
+      input[i] = Input.interpretInputs(i, true);
       menuMove(i, input[i]);
     }
   } else if (gameMode == 10) {
     for (var i = 0; i < ports; i++) {
-      input[i] = interpretInputs(i, true);
+      input[i] = Input.interpretInputs(i, true);
       audioMenuControls(i, input[i]);
     }
   } else if (gameMode == 11) {
     for (var i = 0; i < ports; i++) {
-      input[i] = interpretInputs(i, true);
+      input[i] = Input.interpretInputs(i, true);
       gameplayMenuControls(i, input[i]);
     }
   } else if (gameMode == 12) {
     for (var i = 0; i < ports; i++) {
-      input[i] = interpretInputs(i, true);
+      input[i] = Input.interpretInputs(i, true);
       keyboardMenuControls(i, input[i]);
     }
   } else if (gameMode == 13) {
-    input[i] = interpretInputs(creditsPlayer, true);
+    input[i] = Input.interpretInputs(creditsPlayer, true);
     credits(creditsPlayer, input[i]);
   } else if (gameMode == 2) {
     for (var i = 0; i < 4; i++) {
       if (i < ports) {
-        input[i] = interpretInputs(i, true);
+        input[i] = Input.interpretInputs(i, true);
         cssControls(i, input[i]);
       }
 
@@ -900,16 +713,16 @@ export function gameTick (){
     // stage select
     for (var i = 0; i < 4; i++) {
       if (i < ports) {
-        input[i] = interpretInputs(i, true);
+        input[i] = Input.interpretInputs(i, true);
         sssControls(i, input[i]);
       }
     }
   } else if (gameMode == 7) {
     // stage select
-    input[i] = interpretInputs(targetPlayer, true);
+    input[i] = Input.interpretInputs(targetPlayer, true);
     tssControls(targetPlayer, input[i]);
   } else if (gameMode == 4) {
-    input[i] = interpretInputs(targetBuilder, true);
+    input[i] = Input.interpretInputs(targetBuilder, true);
     targetBuilderControls(targetBuilder, input[i]);
   } else if (gameMode == 5) {
     if (endTargetGame) {
@@ -959,7 +772,7 @@ export function gameTick (){
       }
     } else {
       if (!gameEnd) {
-        input[i] = interpretInputs(targetBuilder, false);
+        input[i] = Input.interpretInputs(targetBuilder, false);
       }
     }
   } else if (playing || frameByFrame) {
@@ -1030,7 +843,7 @@ export function gameTick (){
       for (var i = 0; i < 4; i++) {
         if (playerType[i] == 0) {
           if (currentPlayers[i] != -1) {
-            interpretInputs(i, false);
+            Input.setPlayerInputs(Input.interpretInputs(i, false));
           }
         }
       }
@@ -1182,7 +995,7 @@ export function renderTick (){
 }
 
 export function buildPlayerObject (i){
-  player[i] = new playerObject(cS[i],startingPoint[i],startingFace[i]);
+  player[i] = new playerObject(cS[i],startingPoint[i],startingFace[i],i);
   player[i].phys.ECB1 = [new Vec2D(startingPoint[i].x,startingPoint[i].y),new Vec2D(startingPoint[i].x,startingPoint[i].y),new Vec2D(startingPoint[i].x,startingPoint[i].y),new Vec2D(startingPoint[i].x,startingPoint[i].y)];
   player[i].phys.ECBp = [new Vec2D(startingPoint[i].x,startingPoint[i].y),new Vec2D(startingPoint[i].x,startingPoint[i].y),new Vec2D(startingPoint[i].x,startingPoint[i].y),new Vec2D(startingPoint[i].x,startingPoint[i].y)];
   player[i].difficulty = cpuDifficulty[i];
@@ -1628,4 +1441,7 @@ export function cacheDom() {
 
 export function setCS(index,val){
   cS[index] = val;
+}
+export function setFrameByFrame(val){
+  frameByFrame = val;
 }

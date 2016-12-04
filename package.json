@@ -8,7 +8,7 @@
     "dev": "webpack --progress --colors --watch --config=bin/webpack/dev.config.js",
     "animations": "webpack --progress --colors --config=bin/webpack/animations.config.js",
     "release": "node bin/release.js",
-    "serve":"node app"
+    "serve": "node app"
   },
   "engines": {
     "node": "7.2.0",
@@ -45,6 +45,8 @@
     "yargs": "^6.4.0"
   },
   "devDependencies": {
+    "babel-plugin-transform-class-properties": "^6.19.0",
+    "babel-preset-stage-0": "^6.16.0",
     "happypack": "^3.0.0",
     "sw-precache-webpack-plugin": "^0.6.3"
   },

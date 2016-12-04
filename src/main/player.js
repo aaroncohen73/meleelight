@@ -1,4 +1,5 @@
 import {Vec2D, chars, Box2D} from "main/characters";
+import {Input} from "./input";
 /* eslint-disable */
 
 export function ActiveHitbox(size, offset, dmg, angle, kg, bk, sk, type) {
@@ -96,35 +97,19 @@ export function physicsObject(pos, face) {
   this.bTurnaroundTimer = 0;
   this.bTurnaroundDirection = 1;
 }
-export function inputObject() {
 
-  this.lStickAxis = [new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(0,
-    0), new Vec2D(0, 0), new Vec2D(0, 0)];
-  this.rawlStickAxis = [new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(
-    0, 0), new Vec2D(0, 0), new Vec2D(0, 0)];
-  this.cStickAxis = [new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(0, 0), new Vec2D(0,
-    0), new Vec2D(0, 0), new Vec2D(0, 0)];
-  this.lAnalog = [0, 0, 0, 0, 0, 0, 0, 0];
-  this.rAnalog = [0, 0, 0, 0, 0, 0, 0, 0];
-  this.s = [false, false, false, false, false, false, false, false];
-  this.z = [false, false, false, false, false, false, false, false];
-  this.a = [false, false, false, false, false, false, false, false];
-  this.b = [false, false, false, false, false, false, false, false];
-  this.x = [false, false, false, false, false, false, false, false];
-  this.y = [false, false, false, false, false, false, false, false];
-  this.r = [false, false, false, false, false, false, false, false];
-  this.l = [false, false, false, false, false, false, false, false];
-  this.dpadleft = [false, false, false, false, false, false, false];
-  this.dpaddown = [false, false, false, false, false, false, false];
-  this.dpadright = [false, false, false, false, false, false, false];
-  this.dpadup = [false, false, false, false, false, false, false];
-}
-export function playerObject(character, pos, face) {
+/*
+ character :is the id of the selected character
+pos :starting position
+face :direction faced
+owner : player 1-4
+ */
+export function playerObject(character, pos, face,owner) {
   this.phys = new physicsObject(pos, face);
   this.actionState = "ENTRANCE";
   this.prevActionState = "";
   this.timer = 0;
-  this.inputs = new inputObject();
+  this.inputs = Input;
   this.charAttributes = chars[character].attributes;
   this.charHitboxes = chars[character].hitboxes;
   this.showLedgeGrabBox = false;
